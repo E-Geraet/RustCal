@@ -202,7 +202,8 @@ fn create_task_list(mut events: HashMap<NaiveDate, Vec<TextEvent>>) -> Vec<Vec<T
     // need to go through the next 7 days where the first day is the present
     for i in 0..8 {
         week_events.push(events.entry(
-            NaiveDate::from_ymd_opt(utc.year(), utc.month(), utc.day() + i).unwrap()).or_default().clone());
+            (utc.date_naive() + Duration::days(i as i64))
+        ).or_default().clone());
     }
 
     // TODO: This sorting step makes identifying the events difficult 
