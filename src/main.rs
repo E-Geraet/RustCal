@@ -21,7 +21,7 @@ use chrono::{DateTime, Duration, Local};
 use cursive::traits::*;
 use cursive::Cursive;
 #[macro_use] extern crate serde_derive;
-use cursive::theme::{Theme, Color, PaletteColor};
+use cursive::theme::{Theme, Color, PaletteColor, BaseColor};
 use cursive::views::*;
 use cursive::view::Position;
 use cursive::views::NamedView;
@@ -167,6 +167,23 @@ fn create_panel(year : i32, month : u32, st : Arc<Mutex<Storage>>, timer : Arc<M
                         pomodoro::create_pomodoro_timer(s, pm);
         
                     })))
+                    .child(Panel::new(Button::new("Toggle Theme", |s: &mut Cursive| {
+                        let is_dark_currently = s.user_data::<Box<bool>>()
+                                                 .map(|b| **b) 
+                                                 .unwrap_or(false); // Default to light if not set
+
+                        if is_dark_currently {
+                            // Currently dark, switch to light
+                            let light_theme = create_light_theme(s);
+                            s.set_theme(light_theme);
+                            s.set_user_data(Box::new(false)); // Update state to light
+                        } else {
+                            // Currently light, switch to dark
+                            let dark_theme = create_dark_theme(s);
+                            s.set_theme(dark_theme);
+                            s.set_user_data(Box::new(true)); // Update state to dark
+                        }
+                    })))
 
                     ).title(year.to_string())
                 ).max_width(27)
@@ -237,13 +254,40 @@ fn move_top(c: &mut Cursive, x_in: isize, y_in: isize) {
     s.reposition_layer(l, p);
 }
 
-// placeholder method for future theme managment
-fn custom_theme_from_cursive(siv: &Cursive) -> Theme {
-    let mut theme = siv.current_theme().clone();
-    let new_bg_color = Color::Rgb(48, 48, 48); // Dark Gray
-    theme.palette[PaletteColor::Background] = new_bg_color;
-    theme.palette[PaletteColor::View] = new_bg_color;
+// Function to create a light theme (application's default appearance)
+fn create_light_theme(siv: &Cursive) -> Theme {
+    siv.current_theme().clone()
+}
+
+// Function to create a dark theme
+fn create_dark_theme(siv: &Cursive) -> Theme {
+    let mut theme = siv.current_theme().clone(); // Start from default to get borders, etc.
+    
+    let dark_bg_color = Color::Rgb(48, 48, 48); // Dark Gray
+    let light_text_color = Color::Rgb(220, 220, 220); // Light Gray/White
+
+    theme.palette[PaletteColor::Background] = dark_bg_color;
+    theme.palette[PaletteColor::View] = dark_bg_color;
+
+    theme.palette[PaletteColor::Primary] = light_text_color;
+    theme.palette[PaletteColor::Secondary] = light_text_color;
+    theme.palette[PaletteColor::Tertiary] = light_text_color;
+    theme.palette[PaletteColor::TitlePrimary] = light_text_color;
+    theme.palette[PaletteColor::TitleSecondary] = light_text_color;
+    
+    // Adjust highlight colors for the dark theme
+    theme.palette[PaletteColor::Highlight] = Color::Rgb(80, 80, 120); // A slightly muted highlight
+    theme.palette[PaletteColor::HighlightInactive] = Color::Rgb(60, 60, 90);
+    theme.palette[PaletteColor::HighlightText] = Color::Dark(BaseColor::White);
+
     theme
+}
+
+// placeholder method for future theme managment
+// This function will now determine which theme to apply (e.g., based on a config or toggle)
+// For now, it defaults to the light theme.
+fn custom_theme_from_cursive(siv: &Cursive) -> Theme {
+    create_light_theme(siv)
 }
 
 /// main function that initializes storage and launches app
@@ -269,6 +313,7 @@ fn main() {
     let tm = Arc::clone(&timer);
 
     let mut siv = cursive::default();
+    siv.set_user_data(Box::new(false)); // `false` indicates light mode is initially active.
 
     // temp solution for allowing the movement of the current selected layer/view
     siv.add_global_callback('w', |s| move_top(s, 0, -1));
