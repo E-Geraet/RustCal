@@ -21,7 +21,7 @@ use chrono::{DateTime, Duration, Local};
 use cursive::traits::*;
 use cursive::Cursive;
 #[macro_use] extern crate serde_derive;
-use cursive::theme::*;
+use cursive::theme::{Theme, Color, PaletteColor};
 use cursive::views::*;
 use cursive::view::Position;
 use cursive::views::NamedView;
@@ -239,7 +239,10 @@ fn move_top(c: &mut Cursive, x_in: isize, y_in: isize) {
 
 // placeholder method for future theme managment
 fn custom_theme_from_cursive(siv: &Cursive) -> Theme {
-    let theme = siv.current_theme().clone();
+    let mut theme = siv.current_theme().clone();
+    let new_bg_color = Color::Rgb(48, 48, 48); // Dark Gray
+    theme.palette[PaletteColor::Background] = new_bg_color;
+    theme.palette[PaletteColor::View] = new_bg_color;
     theme
 }
 
