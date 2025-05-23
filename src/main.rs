@@ -255,14 +255,20 @@ fn move_top(c: &mut Cursive, x_in: isize, y_in: isize) {
 }
 
 // Function to create a light theme (application's default appearance)
-fn create_light_theme(siv: &Cursive) -> Theme {
-    siv.current_theme().clone()
+fn create_light_theme(siv: &mut Cursive) -> Theme { // Changed to &mut Cursive for consistency, though &Cursive is also fine for read-only access
+    siv.user_data::<Box<Theme>>() // Retrieves the Box<Theme>
+       .map(|theme_box| (**theme_box).clone()) // Dereferences Box, then clones Theme
+       .expect("Original light theme not found in user data. Ensure it's set in main().")
 }
 
 // Function to create a dark theme
-fn create_dark_theme(siv: &Cursive) -> Theme {
-    let mut theme = siv.current_theme().clone(); // Start from default to get borders, etc.
-    
+fn create_dark_theme(siv: &mut Cursive) -> Theme { // Changed to &mut Cursive
+    // Start by getting a clone of the original light theme
+    let mut theme = siv.user_data::<Box<Theme>>()
+                       .map(|theme_box| (**theme_box).clone())
+                       .expect("Original light theme not found for dark theme creation. Ensure it's set in main().");
+
+    // Now, apply dark theme modifications to this cloned light theme
     let dark_bg_color = Color::Rgb(48, 48, 48); // Dark Gray
     let light_text_color = Color::Rgb(220, 220, 220); // Light Gray/White
 
@@ -275,8 +281,7 @@ fn create_dark_theme(siv: &Cursive) -> Theme {
     theme.palette[PaletteColor::TitlePrimary] = light_text_color;
     theme.palette[PaletteColor::TitleSecondary] = light_text_color;
     
-    // Adjust highlight colors for the dark theme
-    theme.palette[PaletteColor::Highlight] = Color::Rgb(80, 80, 120); // A slightly muted highlight
+    theme.palette[PaletteColor::Highlight] = Color::Rgb(80, 80, 120);
     theme.palette[PaletteColor::HighlightInactive] = Color::Rgb(60, 60, 90);
     theme.palette[PaletteColor::HighlightText] = Color::Dark(BaseColor::White);
 
@@ -286,7 +291,7 @@ fn create_dark_theme(siv: &Cursive) -> Theme {
 // placeholder method for future theme managment
 // This function will now determine which theme to apply (e.g., based on a config or toggle)
 // For now, it defaults to the light theme.
-fn custom_theme_from_cursive(siv: &Cursive) -> Theme {
+fn custom_theme_from_cursive(siv: &mut Cursive) -> Theme { // Changed to &mut Cursive
     create_light_theme(siv)
 }
 
@@ -313,6 +318,8 @@ fn main() {
     let tm = Arc::clone(&timer);
 
     let mut siv = cursive::default();
+    let original_light_theme = siv.current_theme().clone();
+    siv.set_user_data(Box::new(original_light_theme)); 
     siv.set_user_data(Box::new(false)); // `false` indicates light mode is initially active.
 
     // temp solution for allowing the movement of the current selected layer/view
@@ -331,7 +338,7 @@ fn main() {
         });
     });
 
-    let theme = custom_theme_from_cursive(&siv);
+    let theme = custom_theme_from_cursive(&mut siv); // Changed to &mut siv
     siv.set_theme(theme);
 
     siv.add_layer(create_panel(year, month, data, timer));
